@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GUESS THE NUMBER GAME</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+</head>
+
+<body>
+    <div class="container">
+        <div class="heading">
+            <h1>Guess the Number Game</h1>
+        </div>
+        <div class="ques">
+            <h2>Go ahead and enter a random number between 1 to 100 !</h2>
+        </div>
+        <div class="reset">
+            <button title="Click to reset">Reset Game</button>
+        </div>
+        <div class="start">
+            <button title="Click to start">Start</button>
+        </div>
+        <div class="timer">
+            Time Left : 30 seconds
+        </div>
+    
+        <div class="search-bar">
+            <input id="val" title="Type the number here" type="number" placeholder="Enter your guess">
+            <span class="search-icon" onclick="record()">
+                <i class="fa-solid fa-microphone"></i>
+            </span>
+        </div>
+        
+  
+
+
+        <div class="guess"></div>
+        <div class="check-btn">
+            <button title="Click to check">Check</button>
+        </div>
+      
+    </div> 
+    <script src="script.js"></script>
+</body>
+
+</html>
