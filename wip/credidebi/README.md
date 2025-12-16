@@ -6,4 +6,4 @@ handwritten notebooks.
 
 I havent added any framework and database and backend yet . I have used html and css , with javascript for functions along with certain api s.
 
-Almost everything is done till js , but still some debugging is needed since some functions are not working properly and some finishing for ui/ux as well as other things.
+Almost everything is done till js , but still some finishing for ui , adding a database and a frontend framework along with backend is needed.
