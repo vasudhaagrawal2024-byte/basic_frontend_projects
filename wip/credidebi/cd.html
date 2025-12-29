@@ -1,0 +1,323 @@
+<html lang="en"><head>
+<meta charset="UTF-8">
+<title>Interactive Business Tracker</title>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@2.1.5/dist/tesseract.min.js"></script>
+<style>
+body {margin:0;font-family:'Segoe UI',Tahoma,sans-serif;background:linear-gradient(135deg,#f0f4f7,#d9e6f2);color:#333;}
+.navbar{display:flex;justify-content:space-between;align-items:center;background:rgba(44,62,80,0.9);color:white;padding:10px 20px;box-shadow:0 4px 8px rgba(0,0,0,0.2);border-bottom-left-radius:12px;border-bottom-right-radius:12px;}
+.navbar .left,.navbar .right{display:flex;gap:15px;font-size:22px;cursor:pointer;}
+.navbar .center{font-size:18px;background:#27ae60;padding:8px 15px;border-radius:10px;cursor:pointer;transition:0.2s;}
+.navbar .center:hover{background:#2ecc71;transform:scale(1.05);}
+.date{text-align:center;font-size:22px;margin:15px 0;font-weight:bold;}
+.section{background:white;margin:15px auto;padding:20px;border-radius:15px;box-shadow:0 8px 20px rgba(0,0,0,0.15);width:90%;max-width:900px;transition:0.3s;}
+.section:hover{box-shadow:0 12px 25px rgba(0,0,0,0.2);}
+.section h2{margin-bottom:10px;color:#2c3e50;}
+table{width:100%;border-collapse:collapse;}
+table th,table td{border:1px solid #ddd;padding:10px;text-align:center;border-radius:8px;}
+table th{background:#ecf0f1;}
+table tr:nth-child(even){background:#f9f9f9;}
+table tr:hover{background:#d0e6f7;transition:0.2s;}
+.flex-row{display:flex;justify-content:space-between;gap:15px;flex-wrap:wrap;}
+.half-section{flex:1;min-width:320px;background:white;padding:20px;border-radius:15px;box-shadow:0 8px 20px rgba(0,0,0,0.15);transition:0.3s;}
+.half-section:hover{box-shadow:0 12px 25px rgba(0,0,0,0.2);}
+.footer{background:rgba(44,62,80,0.9);color:white;text-align:center;padding:15px;font-size:20px;border-radius:12px;margin:15px auto;width:90%;max-width:900px;}
+.btn{background:#2980b9;color:white;border:none;padding:8px 14px;margin:3px 0;border-radius:10px;cursor:pointer;transition:0.3s;font-weight:bold;}
+.btn:hover{background:#1f6391;transform:scale(1.05);}
+.form-inline{display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap;}
+.form-inline input{padding:8px;flex:1;border-radius:8px;border:1px solid #ccc;}
+.notes{width:90%;max-width:900px;margin:15px auto;}
+textarea{width:100%;height:100px;padding:12px;border-radius:12px;border:1px solid #ccc;resize:none;}
+.popup{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);display:none;justify-content:center;align-items:center;z-index:1000;}
+.popup-content{background:white;padding:20px;border-radius:12px;text-align:center;max-width:400px;box-shadow:0 8px 20px rgba(0,0,0,0.2);}
+video, img{width:100%;max-height:300px;border-radius:12px;}
+.overdue{color:red;font-weight:bold;}
+.credit-badge{background:#2ecc71;color:white;padding:4px 8px;border-radius:8px;font-weight:bold;}
+.debit-badge{background:#e74c3c;color:white;padding:4px 8px;border-radius:8px;font-weight:bold;}
+</style>
+</head>
+<body class="vsc-initialized">
+
+<div class="navbar">
+  <div class="left">
+    <div title="Scan Bill" onclick="openPhotoOptions()">📷</div>
+    <div title="Voice Input" onclick="startMic()">🎤</div>
+  </div>
+  <div class="center" title="Payment Scanner" onclick="openPhotoOptions()">📱 Scan &amp; Pay</div>
+  <div class="right">
+    <div title="Calendar" onclick="openCalendar()">📅</div>
+    <div title="Home" onclick="openHome()">🏠</div>
+  </div>
+</div>
+
+<div class="date" id="today-date">Mon Dec 29 2025</div>
+
+<div class="section">
+  <h2>🔔 Reminders</h2>
+  <ul id="reminder-list"><li>No reminders for this date</li></ul>
+</div>
+
+<div class="flex-row">
+  <div class="half-section">
+    <h2>📉 Debit List</h2>
+    <div class="form-inline">
+      <input type="text" id="debit-name" placeholder="Name (Required)">
+      <input type="number" id="debit-amount" placeholder="Amount (Required)">
+      <input type="text" id="debit-phone" placeholder="Phone (Optional)">
+      <input type="date" id="debit-due" placeholder="Due Date (Optional)">
+      <button class="btn" onclick="manualAdd('debit')" id="debit-btn">Add</button>
+    </div>
+    <table id="debit-table"><tbody><tr><th>Name</th><th>Amount</th><th>Phone</th><th>Due</th><th>Action</th></tr></tbody></table>
+  </div>
+  <div class="half-section">
+    <h2>📈 Credit List</h2>
+    <div class="form-inline">
+      <input type="text" id="credit-name" placeholder="Name (Required)">
+      <input type="number" id="credit-amount" placeholder="Amount (Required)">
+      <input type="text" id="credit-phone" placeholder="Phone (Optional)">
+      <input type="date" id="credit-due" placeholder="Due Date (Optional)">
+      <button class="btn" onclick="manualAdd('credit')" id="credit-btn">Add</button>
+    </div>
+    <table id="credit-table"><tbody><tr><th>Name</th><th>Amount</th><th>Phone</th><th>Due</th><th>Action</th></tr></tbody></table>
+  </div>
+</div>
+
+<div class="notes">
+  <h2>📝 Notes</h2>
+  <textarea id="notes-box" placeholder="Write anything here..."></textarea>
+</div>
+
+<div class="footer" id="profit-summary">Date: Mon Dec 29 2025 | Profit: ₹0</div>
+
+<div class="popup" id="popup" style="display: none;">
+  <div class="popup-content" id="popup-content"><h3>Voice Input</h3><p id="mic-text">Listening...</p><br><button class="btn" onclick="closePopup()">Close</button></div>
+</div>
+
+<script>
+function wordsToDigits(text){
+  const map={"zero":"0","one":"1","two":"2","three":"3","four":"4","five":"5","six":"6","seven":"7","eight":"8","nine":"9"};
+  return text.toLowerCase().split(/\s+/).map(w=>map[w]!==undefined?map[w]:"").join("");
+}
+
+// ===== DATA INIT =====
+let currentDate=new Date().toISOString().split("T")[0];
+document.getElementById("today-date").innerText=new Date(currentDate).toDateString();
+let records=JSON.parse(localStorage.getItem("records"))||{};
+function saveData(){localStorage.setItem("records",JSON.stringify(records));}
+function getRecordsForDate(date){if(!records[date]) records[date]={debits:[],credits:[],notes:""}; return records[date];}
+
+// ===== ADD / EDIT ENTRIES =====
+let editIndex = null;
+let editType = null;
+
+function addEntry(type,name,amount,phone="",due=currentDate){
+  if(!name||!amount) return;
+  let rec=getRecordsForDate(currentDate);
+  if(editIndex !== null && editType === type){
+    // Edit existing
+    if(type==="debit") rec.debits[editIndex] = {name,amount,phone,due};
+    else rec.credits[editIndex] = {name,amount,phone,due};
+    editIndex = null; editType = null;
+    document.getElementById(type+"-btn").innerText = "Add";
+  } else {
+    // Add new
+    if(type==="debit") rec.debits.push({name,amount,phone,due});
+    else rec.credits.push({name,amount,phone,due});
+  }
+  saveData(); updateUI();
+}
+
+function manualAdd(type){
+  let name = document.getElementById(type+"-name").value;
+  let amount = parseFloat(document.getElementById(type+"-amount").value);
+  let phone = document.getElementById(type+"-phone").value;
+  let due = document.getElementById(type+"-due").value || "";
+  addEntry(type,name,amount,phone,due);
+  document.getElementById(type+"-name").value="";
+  document.getElementById(type+"-amount").value="";
+  document.getElementById(type+"-phone").value="";
+  document.getElementById(type+"-due").value="";
+}
+
+function editEntry(type,index){
+  let rec = getRecordsForDate(currentDate);
+  let entry = type==="debit" ? rec.debits[index] : rec.credits[index];
+  document.getElementById(type+"-name").value = entry.name;
+  document.getElementById(type+"-amount").value = entry.amount;
+  document.getElementById(type+"-phone").value = entry.phone;
+  document.getElementById(type+"-due").value = entry.due;
+  editIndex = index;
+  editType = type;
+  document.getElementById(type+"-btn").innerText = "Update";
+}
+
+// ===== DELETE =====
+function deleteDebit(i){ let rec=getRecordsForDate(currentDate); rec.debits.splice(i,1); saveData(); updateUI();}
+function deleteCredit(i){ let rec=getRecordsForDate(currentDate); rec.credits.splice(i,1); saveData(); updateUI();}
+
+// ===== UPDATE UI =====
+function updateUI(){
+  let rec=getRecordsForDate(currentDate);
+  let debitTable=document.getElementById("debit-table");
+  debitTable.innerHTML="<tr><th>Name</th><th>Amount</th><th>Phone</th><th>Due</th><th>Action</th></tr>";
+  rec.debits.forEach((d,i)=>{
+    let overdue=(d.due && d.due<currentDate)?'overdue':'';
+    debitTable.innerHTML+=`<tr class="${overdue}"><td>${d.name}</td><td>₹${d.amount}</td><td>${d.phone||"-"}</td><td>${d.due||"-"}</td>
+      <td>
+        <button class="btn" onclick="editEntry('debit',${i})">Edit</button>
+        <button class="btn" onclick="deleteDebit(${i})">Delete</button>
+      </td>
+    </tr>`;
+  });
+
+  let creditTable=document.getElementById("credit-table");
+  creditTable.innerHTML="<tr><th>Name</th><th>Amount</th><th>Phone</th><th>Due</th><th>Action</th></tr>";
+  rec.credits.forEach((c,i)=>{
+    let overdue=(c.due && c.due<currentDate)?'overdue':'';
+    creditTable.innerHTML+=`<tr class="${overdue}"><td>${c.name}</td><td>₹${c.amount}</td><td>${c.phone||"-"}</td><td>${c.due||"-"}</td>
+      <td>
+        <button class="btn" onclick="editEntry('credit',${i})">Edit</button>
+        <button class="btn" onclick="deleteCredit(${i})">Delete</button>
+      </td>
+    </tr>`;
+  });
+
+  let profit=rec.credits.reduce((s,c)=>s+c.amount,0)-rec.debits.reduce((s,d)=>s+d.amount,0);
+  document.getElementById("profit-summary").innerText=`Date: ${new Date(currentDate).toDateString()} | Profit: ₹${profit}`;
+  document.getElementById("notes-box").value=rec.notes||"";
+  
+  let reminderList=document.getElementById("reminder-list"); reminderList.innerHTML="";
+  let dueToday=[];
+  for(let date in records){
+    records[date].debits.concat(records[date].credits).forEach(e=>{ if(e.due===currentDate) dueToday.push(e); });
+  }
+  if(dueToday.length===0) reminderList.innerHTML="<li>No reminders for this date</li>";
+  else dueToday.forEach(e=>{ let li=document.createElement("li"); li.textContent=`${e.name} → ₹${e.amount} (📞 ${e.phone||"-"})`; reminderList.appendChild(li); });
+}
+
+document.getElementById("notes-box").addEventListener("input",function(){ let rec=getRecordsForDate(currentDate); rec.notes=this.value; saveData(); });
+
+// ===== CALENDAR =====
+function openCalendar(){ const popup=document.getElementById("popup"); const content=document.getElementById("popup-content");
+  content.innerHTML=`<h3>Pick a Date</h3><input type="date" value="${currentDate}" id="date-picker"><br><br>
+  <button class="btn" onclick="setDate()">Select</button> <button class="btn" onclick="closePopup()">Close</button>`; popup.style.display="flex";}
+function setDate(){ currentDate=document.getElementById("date-picker").value; document.getElementById("today-date").innerText=new Date(currentDate).toDateString(); updateUI(); closePopup();}
+
+// ===== HOME SETTINGS =====
+function openHome(){ const popup=document.getElementById("popup"); const content=document.getElementById("popup-content");
+  content.innerHTML=`<h3>Home Settings</h3><label>Language: <select><option>English</option></select></label><br><br>
+  <button class="btn" onclick="closePopup()">Close</button>`; popup.style.display="flex"; }
+function closePopup(){ document.getElementById("popup").style.display="none"; }
+
+// ===== PHOTO OPTIONS =====
+function openPhotoOptions(){
+  const popup=document.getElementById("popup"); const content=document.getElementById("popup-content");
+  content.innerHTML=`<h3>Choose Input</h3>
+    <button class="btn" onclick="openCamera()">📷 Take Photo</button><br><br>
+    <input type="file" accept="image/*" onchange="uploadImage(event)"><br><br>
+    <button class="btn" onclick="closePopup()">Close</button>`;
+  popup.style.display="flex";
+}
+
+// ===== CAMERA PHOTO =====
+function openCamera(){
+  const popup=document.getElementById("popup"); const content=document.getElementById("popup-content");
+  content.innerHTML=`<h3>Camera</h3><video autoplay playsinline></video><br>
+    <button class="btn" onclick="capturePhoto()">Capture</button>
+    <button class="btn" onclick="closePopup()">Close</button>`;
+  popup.style.display="flex";
+  navigator.mediaDevices.getUserMedia({video:true})
+    .then(stream => { content.querySelector("video").srcObject = stream; })
+    .catch(err => alert("Camera not accessible: "+err));
+}
+
+function capturePhoto(){
+  const video=document.querySelector("video");
+  const canvas=document.createElement("canvas");
+  canvas.width=video.videoWidth || 640;
+  canvas.height=video.videoHeight || 480;
+  canvas.getContext("2d").drawImage(video,0,0,canvas.width,canvas.height);
+  video.srcObject.getTracks().forEach(track=>track.stop());
+  const imgData = canvas.toDataURL("image/png");
+  parseImage(imgData);
+}
+
+// ===== UPLOAD IMAGE =====
+function uploadImage(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){ parseImage(e.target.result); }
+  reader.readAsDataURL(file);
+}
+
+// ===== PARSE IMAGE =====
+function parseImage(imgData){
+  Tesseract.recognize(imgData,'eng',{logger:m=>console.log(m)})
+    .then(({data:{text}})=>{
+      text.split('\n').forEach(line=>{
+        line=line.trim(); if(!line) return;
+        let type=null;
+        if(/debit|lent|paid/i.test(line)) type="debit";
+        else if(/credit|received/i.test(line)) type="credit";
+        if(!type) return;
+        let amountMatch=line.match(/\d+/); if(!amountMatch) return;
+        let amount=parseFloat(amountMatch[0]);
+
+        let name="Unknown";
+        let nameMatch=line.match(/(?:to|from|name)\s+([a-zA-Z\s]+)/i);
+        if(nameMatch){ name=nameMatch[1].trim().replace(/\s*phone\s*$/i,""); }
+
+        let phone="";
+        let phoneMatch=line.match(/phone\s*[:\s]*([\d]+)/i);
+        if(phoneMatch) phone=phoneMatch[1].trim();
+
+        let due="";
+        let dueMatch=line.match(/due\s+on\s+(\d{1,2})\s+([a-zA-Z]+)/i);
+        if(dueMatch){
+          let day=parseInt(dueMatch[1]); let monthStr=dueMatch[2].toLowerCase();
+          const monthMap={"january":0,"february":1,"march":2,"april":3,"may":4,"june":5,"july":6,"august":7,"september":8,"october":9,"november":10,"december":11};
+          if(monthMap[monthStr]!==undefined){ let d=new Date(); d.setFullYear(new Date().getFullYear()); d.setMonth(monthMap[monthStr]); d.setDate(day); due=d.toISOString().split("T")[0]; }
+        }
+
+        addEntry(type,name,amount,phone,due);
+      });
+      closePopup();
+    });
+}
+
+// ===== VOICE INPUT =====
+function startMic() {
+  const popup=document.getElementById("popup"); const content=document.getElementById("popup-content");
+  content.innerHTML=`<h3>Voice Input</h3><p id="mic-text">Listening...</p><br><button class="btn" onclick="closePopup()">Close</button>`; popup.style.display="flex";
+  if('webkitSpeechRecognition' in window){
+    let recognition=new webkitSpeechRecognition(); recognition.lang="en-US";
+    recognition.onresult=function(event){
+      let transcript=event.results[0][0].transcript; document.getElementById("mic-text").innerText="You said: "+transcript;
+      let type=/debit/i.test(transcript)?"debit":/credit/i.test(transcript)?"credit":null; if(!type) return;
+      let amountMatch=transcript.match(/\d+/); if(!amountMatch) return; let amount=parseFloat(amountMatch[0]);
+      let name="Unknown";
+      let nameMatch=transcript.match(/(?:from|to|name)\s+(.+?)(?=(phone|due on|$))/i);
+      if(nameMatch){ name=nameMatch[1].trim(); }
+      let phone="";
+      let phoneMatch=transcript.match(/phone\s+(.+?)(?=(due on|$))/i);
+      if(phoneMatch){
+        let rawPhone=phoneMatch[1].trim();
+        if(/^[\d\s]+$/.test(rawPhone)){ phone=rawPhone.replace(/\s+/g,""); }
+        else{ phone=wordsToDigits(rawPhone).replace(/\s+/g,""); }
+      }
+      let due="";
+      let dueMatch=transcript.match(/due on (\d{1,2}) (\w+)/i);
+      if(dueMatch){ let day=parseInt(dueMatch[1]); let monthStr=dueMatch[2].toLowerCase();
+        const monthMap={"january":0,"february":1,"march":2,"april":3,"may":4,"june":5,"july":6,"august":7,"september":8,"october":9,"november":10,"december":11};
+        if(monthMap[monthStr]!==undefined){ let d=new Date(); d.setFullYear(new Date().getFullYear()); d.setMonth(monthMap[monthStr]); d.setDate(day); due=d.toISOString().split("T")[0]; }
+      }
+      addEntry(type,name,amount,phone,due);
+    }
+    recognition.start();
+  } else { document.getElementById("mic-text").innerText="Speech recognition not supported."; }
+}
+
+updateUI();
+</script>
+
+</body></html>
